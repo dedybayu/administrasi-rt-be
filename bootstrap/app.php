@@ -16,7 +16,19 @@ return Application::configure(basePath: dirname(__DIR__))
             'is_rt' => \App\Http\Middleware\IsRtMiddleware::class,
             'is_warga' => \App\Http\Middleware\IsWargaMiddleware::class,
         ]);
+
+        $middleware->redirectGuestsTo(function (\Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                return null;
+            }
+        });
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'error' => 'Unauthenticated (Token tidak valid atau tidak ditemukan)'
+                ], 401);
+            }
+        });
     })->create();

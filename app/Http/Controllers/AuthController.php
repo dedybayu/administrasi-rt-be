@@ -2,68 +2,65 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AuthService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
     /**
+     * The authentication service instance.
+     *
+     * @var AuthService
+     */
+    protected AuthService $authService;
+
+    /**
+     * Create a new AuthController instance.
+     *
+     * @param AuthService $authService
+     */
+    public function __construct(AuthService $authService)
+    {
+        $this->authService = $authService;
+    }
+
+    /**
      * Get a JWT via given credentials.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function login(Request $request)
     {
         $credentials = $request->only('username', 'password');
+        $response = $this->authService->login($credentials);
 
-        if (! $token = auth('api')->attempt($credentials)) {
+        if (!$response) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        return $this->respondWithToken($token);
+        return response()->json($response);
     }
 
     /**
      * Refresh a token.
+     *
+     * @return \Illuminate\Http\JsonResponse
      */
     public function refresh()
     {
-        /** @var \PHPOpenSourceSaver\JWTAuth\JWTGuard $guard */
-        $guard = auth('api');
-        return $this->respondWithToken($guard->refresh());
+        $response = $this->authService->refresh();
+        return response()->json($response);
     }
 
     /**
      * Log the user out (Invalidate the token).
+     *
+     * @return \Illuminate\Http\JsonResponse
      */
     public function logout()
     {
-        auth('api')->logout();
-
+        $this->authService->logout();
         return response()->json(['message' => 'Successfully logged out']);
-    }
-
-    /**
-     * Get the token array structure.
-     */
-    protected function respondWithToken($token)
-    {
-        /** @var \PHPOpenSourceSaver\JWTAuth\JWTGuard $guard */
-        $guard = auth('api');
-        
-        $user = $guard->user() ?? $guard->setToken($token)->user();
-
-        // Standard token is used as access_token (15 mins TTL)
-        $accessToken = $guard->setTTL(15)->tokenById($user->user_id);
-
-        // We generate a separate token with 6 hours (360 mins) TTL for refresh token
-        // Also adding a custom claim 'type' => 'refresh' to distinguish it if needed later
-        $refreshToken = $guard->setTTL(360)->claims(['type' => 'refresh'])->tokenById($user->user_id);
-
-        return response()->json([
-            'access_token' => $accessToken,
-            'refresh_token' => $refreshToken,
-            'token_type' => 'bearer',
-            'expires_in' => $guard->factory()->getTTL() * 60, // returns TTL of last generated token (or default)
-            'user' => $user
-        ]);
     }
 }
