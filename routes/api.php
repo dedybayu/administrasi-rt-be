@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\InfoController;
+use App\Http\Controllers\OccupantController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/refresh-token', [AuthController::class, 'refresh']);
@@ -18,5 +19,10 @@ Route::middleware('auth:api')->group(function () {
     
     // Bersama (RT & Warga)
     Route::get('/infobersama', [InfoController::class, 'infobersama']);
+    
+    // CRUD Occupants (RT Only)
+    Route::middleware('is_rt')->group(function () {
+        Route::apiResource('occupants', OccupantController::class);
+    });
     
 });

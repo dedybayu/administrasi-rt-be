@@ -38,4 +38,11 @@ class OccupantModel extends Model
     {
         return $this->hasMany(PaymentModel::class, 'payer_occupant_id', 'occupant_id');
     }
+
+    protected $appends = ['occupant_ktp_url'];
+
+    public function getOccupantKtpUrlAttribute()
+    {
+        return $this->occupant_ktp_photo ? asset('storage/' . $this->occupant_ktp_photo) : null;
+    }
 }
