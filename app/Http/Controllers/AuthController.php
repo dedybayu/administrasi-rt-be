@@ -36,7 +36,7 @@ class AuthController extends Controller
         $response = $this->authService->login($credentials);
 
         if (!$response) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return response()->json(['error' => 'Wrong password or username'], 401);
         }
 
         return response()->json($response);
