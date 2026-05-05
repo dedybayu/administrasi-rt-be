@@ -8,6 +8,7 @@ use App\Http\Controllers\OccupantController;
 use App\Http\Controllers\HouseController;
 use App\Http\Controllers\HouseOccupantController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\DashboardController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/refresh-token', [AuthController::class, 'refresh']);
@@ -30,6 +31,9 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('houses', HouseController::class);
         Route::apiResource('house-occupants', HouseOccupantController::class);
         Route::apiResource('payments', PaymentController::class);
+        
+        // Dashboard Reports
+        Route::get('/dashboard/report-monthly', [DashboardController::class, 'getMonthlyReport']);
     });
     
 });
