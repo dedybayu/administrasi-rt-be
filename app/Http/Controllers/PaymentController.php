@@ -10,7 +10,24 @@ class PaymentController extends Controller
 {
     public function index()
     {
-        $payments = PaymentModel::with(['duesType', 'payerOccupant', 'houseOccupant.house', 'houseOccupant.occupant'])->get();
+        $payments = PaymentModel::with([
+            'duesType:dues_type_id,dues_type_name,dues_type_amount',
+            'payerOccupant:occupant_id,occupant_name',
+            'houseOccupant:house_occupant_id,house_id,occupant_id',
+            'houseOccupant.house:house_id,house_name,house_number',
+            'houseOccupant.occupant:occupant_id,occupant_name'
+        ])->get([
+            'payment_id',
+            'dues_type_id',
+            'payer_occupant_id',
+            'house_occupant_id',
+            'payment_amount',
+            'payment_date',
+            'payment_period_month',
+            'payment_period_year',
+            'payment_status'
+        ]);
+
         return response()->json([
             'message' => 'Success retrieve all payments',
             'data' => $payments
@@ -46,7 +63,13 @@ class PaymentController extends Controller
     {
         return response()->json([
             'message' => 'Success retrieve payment detail',
-            'data' => $payment->load(['duesType', 'payerOccupant', 'houseOccupant.house', 'houseOccupant.occupant'])
+            'data' => $payment->load([
+                'duesType:dues_type_id,dues_type_name,dues_type_amount',
+                'payerOccupant:occupant_id,occupant_name',
+                'houseOccupant:house_occupant_id,house_id,occupant_id',
+                'house_occupant.house:house_id,house_name,house_number',
+                'house_occupant.occupant:occupant_id,occupant_name'
+            ])
         ]);
     }
 

@@ -11,7 +11,15 @@ class OccupantController extends Controller
 {
     public function index()
     {
-        $occupants = OccupantModel::all();
+        $occupants = OccupantModel::select([
+            'occupant_id',
+            'occupant_name',
+            'occupant_status',
+            'occupant_phone_number',
+            'is_married',
+            'occupant_ktp_photo'
+        ])->get();
+
         return response()->json([
             'message' => 'Success retrieve all occupants',
             'data' => $occupants
