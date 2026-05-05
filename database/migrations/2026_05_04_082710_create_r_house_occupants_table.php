@@ -18,6 +18,7 @@ return new class extends Migration
             $table->date('start_in_date');
             $table->date('end_in_date')->nullable()->default(null);
             $table->boolean('is_current')->default(true);
+            $table->boolean('is_head_family')->default(false);
 
             $table->foreign('house_id')->references('house_id')->on('m_houses')->onDelete('cascade');
             $table->foreign('occupant_id')->references('occupant_id')->on('m_occupants')->onDelete('cascade');

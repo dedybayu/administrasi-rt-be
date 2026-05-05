@@ -26,9 +26,12 @@ class RtSeeder extends Seeder
 
         // 1. Create 20 houses
         $houses = [];
+        $blockNames = ['Cendana', 'Bougenville', 'Flamboyan', 'Mahoni', 'Anggrek'];
         for ($i = 1; $i <= 20; $i++) {
+            $nameIndex = floor(($i - 1) / 4); // 5 blocks of 4 houses
+            $numInBlock = ($i - 1) % 4 + 1;
             $houses[] = HouseModel::create([
-                'house_name' => 'Blok A',
+                'house_name' => $blockNames[$nameIndex] . ' ' . $numInBlock,
                 'house_number' => str_pad($i, 2, '0', STR_PAD_LEFT),
             ]);
         }
@@ -50,9 +53,10 @@ class RtSeeder extends Seeder
                 'house_id' => $houses[$i - 1]->house_id,
                 'occupant_id' => $occupant->occupant_id,
                 'start_in_date' => $now->copy()->subYears(rand(1, 5))->toDateString(),
-                // Because end_in_date is not nullable in migration, we use a date far in the future
-                'end_in_date' => $now->copy()->addYears(50)->toDateString(), 
+                // Because end_in_date is nullable in migration, null is fine but seeder used far future before
+                'end_in_date' => null, 
                 'is_current' => true,
+                'is_head_family' => true,
             ]);
         }
 
@@ -74,6 +78,7 @@ class RtSeeder extends Seeder
                 'start_in_date' => $now->copy()->subMonths(rand(1, 6))->toDateString(),
                 'end_in_date' => $now->copy()->addMonths(rand(1, 6))->toDateString(),
                 'is_current' => true,
+                'is_head_family' => true,
             ]);
         }
         // House 19 and 20 are left completely empty
@@ -171,6 +176,26 @@ class RtSeeder extends Seeder
                     'expense_date' => $date->copy()->startOfMonth()->addDays(rand(1, 28))->toDateString(),
                 ]);
             }
+        }
+
+        // 10. Create 5 inactive occupants (riwayat)
+        for ($i = 1; $i <= 5; $i++) {
+            $occupant = OccupantModel::create([
+                'occupant_name' => $faker->name . ' (Mantan)',
+                'occupant_ktp_photo' => 'ktp_inactive_' . $i . '.jpg',
+                'occupant_status' => 'kontrak',
+                'occupant_phone_number' => $faker->phoneNumber,
+                'is_married' => $i % 2 == 0,
+            ]);
+            
+            HouseOccupantModel::create([
+                'house_id' => $houses[$i - 1]->house_id, // Assign to houses 1-5
+                'occupant_id' => $occupant->occupant_id,
+                'start_in_date' => $now->copy()->subYears(10)->toDateString(),
+                'end_in_date' => $now->copy()->subYears(5)->toDateString(),
+                'is_current' => false,
+                'is_head_family' => false,
+            ]);
         }
     }
 }

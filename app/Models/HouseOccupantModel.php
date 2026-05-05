@@ -18,12 +18,14 @@ class HouseOccupantModel extends Model
         'start_in_date',
         'end_in_date',
         'is_current',
+        'is_head_family',
     ];
 
     protected $casts = [
         'start_in_date' => 'date',
         'end_in_date' => 'date',
         'is_current' => 'boolean',
+        'is_head_family' => 'boolean',
     ];
 
     public function house()

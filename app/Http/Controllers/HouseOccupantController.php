@@ -25,13 +25,34 @@ class HouseOccupantController extends Controller
             'start_in_date' => 'required|date',
             'end_in_date' => 'nullable|date|after_or_equal:start_in_date',
             'is_current' => 'required|boolean',
+            'is_head_family' => 'required|boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 400);
         }
 
-        $houseOccupant = HouseOccupantModel::create($request->all());
+        $data = $request->all();
+
+        // Check if there are any current head of family in this house
+        $hasHead = HouseOccupantModel::where('house_id', $request->house_id)
+            ->where('is_current', true)
+            ->where('is_head_family', true)
+            ->exists();
+            
+        // If no head exists and this is an active occupant, automatically make them head
+        if (!$hasHead && $request->is_current) {
+            $data['is_head_family'] = true;
+        }
+
+        // If this occupant is head of family, unset any existing head of family for this house
+        if (isset($data['is_head_family']) && $data['is_head_family']) {
+            HouseOccupantModel::where('house_id', $request->house_id)
+                ->where('is_head_family', true)
+                ->update(['is_head_family' => false]);
+        }
+
+        $houseOccupant = HouseOccupantModel::create($data);
 
         return response()->json([
             'message' => 'House occupant created successfully',
@@ -55,13 +76,49 @@ class HouseOccupantController extends Controller
             'start_in_date' => 'sometimes|required|date',
             'end_in_date' => 'sometimes|nullable|date|after_or_equal:start_in_date',
             'is_current' => 'sometimes|required|boolean',
+            'is_head_family' => 'sometimes|required|boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 400);
         }
 
-        $houseOccupant->update($request->all());
+        $data = $request->all();
+        $houseId = $request->house_id ?? $houseOccupant->house_id;
+        $isCurrent = $request->has('is_current') ? $request->is_current : $houseOccupant->is_current;
+
+        // Check if there are any current head of family in this house (excluding this record)
+        $hasHead = HouseOccupantModel::where('house_id', $houseId)
+            ->where('house_occupant_id', '!=', $houseOccupant->house_occupant_id)
+            ->where('is_current', true)
+            ->where('is_head_family', true)
+            ->exists();
+            
+        // If no head exists and this is/remains an active occupant, automatically make them head
+        if (!$hasHead && $isCurrent && !$request->has('is_head_family')) {
+            $data['is_head_family'] = true;
+        }
+
+        // If updating to be head of family, unset others for this house
+        if (isset($data['is_head_family']) && $data['is_head_family']) {
+            HouseOccupantModel::where('house_id', $houseId)
+                ->where('house_occupant_id', '!=', $houseOccupant->house_occupant_id)
+                ->where('is_head_family', true)
+                ->update(['is_head_family' => false]);
+        } elseif ($request->has('is_head_family') && !$request->is_head_family && $isCurrent) {
+            // If trying to UNSET head of family, check if they are the only active occupant
+            $activeCount = HouseOccupantModel::where('house_id', $houseId)
+                ->where('is_current', true)
+                ->count();
+            if ($activeCount <= 1) {
+                return response()->json([
+                    'message' => 'The given data was invalid.',
+                    'errors' => ['is_head_family' => ['Kepala keluarga tidak bisa dihapus jika hanya ada satu penghuni aktif.']]
+                ], 400);
+            }
+        }
+
+        $houseOccupant->update($data);
 
         return response()->json([
             'message' => 'House occupant updated successfully',

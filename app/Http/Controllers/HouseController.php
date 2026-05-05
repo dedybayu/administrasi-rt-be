@@ -11,7 +11,9 @@ class HouseController extends Controller
     public function index()
     {
         $houses = HouseModel::select('house_id', 'house_name', 'house_number')
-            ->withCount('houseOccupants')
+            ->withCount(['houseOccupants as house_occupants_count' => function ($query) {
+                $query->where('is_current', true);
+            }])
             ->get();
             
         return response()->json([
