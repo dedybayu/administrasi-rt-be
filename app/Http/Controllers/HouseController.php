@@ -69,4 +69,13 @@ class HouseController extends Controller
 
         return response()->json(['message' => 'House deleted successfully']);
     }
+
+    public function occupants(HouseModel $house)
+    {
+        $occupants = $house->houseOccupants()->with('occupant')->get();
+        return response()->json([
+            'message' => 'Success retrieve house occupants',
+            'data' => $occupants
+        ]);
+    }
 }

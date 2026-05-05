@@ -35,6 +35,7 @@ Route::middleware('auth:api')->group(function () {
     Route::middleware('is_rt')->group(function () {
         Route::apiResource('occupants', OccupantController::class);
         Route::apiResource('houses', HouseController::class);
+        Route::get('/houses/{house}/occupants', [HouseController::class, 'occupants']);
         Route::apiResource('house-occupants', HouseOccupantController::class);
         Route::apiResource('payments', PaymentController::class);
         
