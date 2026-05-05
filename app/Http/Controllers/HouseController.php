@@ -10,7 +10,7 @@ class HouseController extends Controller
 {
     public function index()
     {
-        $houses = HouseModel::all();
+        $houses = HouseModel::withCount('houseOccupants')->get();
         return response()->json([
             'message' => 'Success retrieve all houses',
             'data' => $houses
