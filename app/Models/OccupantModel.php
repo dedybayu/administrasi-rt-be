@@ -18,6 +18,7 @@ class OccupantModel extends Model
         'occupant_status',
         'occupant_phone_number',
         'is_married',
+        'occupant_gender',
     ];
 
     protected $casts = [
@@ -39,11 +40,11 @@ class OccupantModel extends Model
         return $this->hasMany(PaymentModel::class, 'payer_occupant_id', 'occupant_id');
     }
 
-    protected $appends = ['occupant_ktp_url'];
+    // protected $appends = ['occupant_ktp_url'];
 
-    public function getOccupantKtpUrlAttribute()
-    {
-        // return $this->occupant_ktp_photo ? asset('api/ktp-photo/' . $this->occupant_ktp_photo) : null;
-        return $this->occupant_ktp_photo;
-    }
+    // public function getOccupantKtpUrlAttribute()
+    // {
+    //     // return $this->occupant_ktp_photo ? asset('api/ktp-photo/' . $this->occupant_ktp_photo) : null;
+    //     return $this->occupant_ktp_photo;
+    // }
 }

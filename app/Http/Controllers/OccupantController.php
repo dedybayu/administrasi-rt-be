@@ -17,7 +17,8 @@ class OccupantController extends Controller
             'occupant_status',
             'occupant_phone_number',
             'is_married',
-            'occupant_ktp_photo'
+            'occupant_ktp_photo',
+            'occupant_gender'
         ])->get();
 
         return response()->json([
@@ -34,6 +35,7 @@ class OccupantController extends Controller
             'occupant_status' => 'required|string',
             'occupant_phone_number' => 'required|string|max:20',
             'is_married' => 'required|boolean',
+            'occupant_gender' => 'nullable|in:L,P',
         ]);
 
         if ($validator->fails()) {
@@ -48,8 +50,9 @@ class OccupantController extends Controller
             if (!$file->isValid()) {
                 return response()->json(['message' => 'File upload tidak valid atau korup'], 400);
             }
-            $path = Storage::disk('public')->putFile('ktp_photos', $file);
-            $data['occupant_ktp_photo'] = $path;
+            $filename = $file->hashName();
+            $file->storeAs('ktp_photos', $filename, 'public');
+            $data['occupant_ktp_photo'] = $filename;
         } else {
             $data['occupant_ktp_photo'] = null;
         }
@@ -64,6 +67,7 @@ class OccupantController extends Controller
 
     public function show(OccupantModel $occupant)
     {
+        $occupant->load(['houseOccupants.house', 'payments.duesType']);
         return response()->json([
             'message' => 'Success retrieve occupant detail',
             'data' => $occupant
@@ -78,6 +82,7 @@ class OccupantController extends Controller
             'occupant_status' => 'sometimes|required|string',
             'occupant_phone_number' => 'sometimes|required|string|max:20',
             'is_married' => 'sometimes|required|boolean',
+            'occupant_gender' => 'nullable|in:L,P',
         ]);
 
         if ($validator->fails()) {
@@ -94,10 +99,11 @@ class OccupantController extends Controller
             }
             // Delete old photo if exists
             if (!empty($occupant->occupant_ktp_photo)) {
-                Storage::disk('public')->delete($occupant->occupant_ktp_photo);
+                Storage::disk('public')->delete('ktp_photos/' . $occupant->occupant_ktp_photo);
             }
-            $path = Storage::disk('public')->putFile('ktp_photos', $file);
-            $data['occupant_ktp_photo'] = $path;
+            $filename = $file->hashName();
+            $file->storeAs('ktp_photos', $filename, 'public');
+            $data['occupant_ktp_photo'] = $filename;
         }
 
         $occupant->update($data);
@@ -112,7 +118,7 @@ class OccupantController extends Controller
     {
         // Delete photo if exists
         if (!empty($occupant->occupant_ktp_photo)) {
-            Storage::disk('public')->delete($occupant->occupant_ktp_photo);
+            Storage::disk('public')->delete('ktp_photos/' . $occupant->occupant_ktp_photo);
         }
 
         OccupantModel::destroy($occupant->occupant_id);

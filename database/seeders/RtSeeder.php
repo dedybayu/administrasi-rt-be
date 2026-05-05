@@ -45,6 +45,7 @@ class RtSeeder extends Seeder
                 'occupant_status' => 'tetap',
                 'occupant_phone_number' => $faker->phoneNumber,
                 'is_married' => $i % 2 == 0,
+                'occupant_gender' => $i % 2 == 0 ? 'L' : 'P',
             ]);
             $permanentOccupants[] = $occupant;
 
@@ -69,6 +70,7 @@ class RtSeeder extends Seeder
                 'occupant_status' => 'kontrak',
                 'occupant_phone_number' => $faker->phoneNumber,
                 'is_married' => false,
+                'occupant_gender' => $i % 2 == 0 ? 'L' : 'P',
             ]);
             $contractOccupants[] = $occupant;
 

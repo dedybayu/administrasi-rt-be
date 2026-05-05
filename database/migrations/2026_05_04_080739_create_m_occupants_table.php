@@ -18,6 +18,7 @@ return new class extends Migration
             $table->enum('occupant_status', ['tetap', 'kontrak']);
             $table->string('occupant_phone_number');
             $table->boolean('is_married')->default(false);
+            $table->enum('occupant_gender', ['L', 'P']);
             $table->timestamps();
         });
     }
