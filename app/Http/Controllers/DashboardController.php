@@ -13,7 +13,7 @@ class DashboardController extends Controller
     public function getMonthlyReport(Request $request)
     {
         // Get unique years that have data
-        $paymentYears = PaymentModel::select(DB::raw('YEAR(payment_date) as year'))
+        $paymentYears = PaymentModel::select('payment_period_year as year')
             ->distinct()
             ->pluck('year')
             ->toArray();
@@ -23,7 +23,7 @@ class DashboardController extends Controller
             ->pluck('year')
             ->toArray();
 
-        $availableYears = array_unique(array_merge($paymentYears, $expenseYears));
+        $availableYears = array_filter(array_unique(array_merge($paymentYears, $expenseYears)));
         sort($availableYears);
 
         if (empty($availableYears)) {
@@ -33,11 +33,11 @@ class DashboardController extends Controller
         // Get all income grouped by year and month
         $incomeData = PaymentModel::where('payment_status', 'success')
             ->select(
-                DB::raw('YEAR(payment_date) as year'),
-                DB::raw('MONTH(payment_date) as month'),
+                'payment_period_year as year',
+                'payment_period_month as month',
                 DB::raw('SUM(payment_amount) as total_income')
             )
-            ->groupBy('year', 'month')
+            ->groupBy('payment_period_year', 'payment_period_month')
             ->get()
             ->groupBy('year');
 
