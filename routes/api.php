@@ -13,7 +13,6 @@ use App\Http\Controllers\WargaController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/refresh-token', [AuthController::class, 'refresh']);
-Route::get('/ktp-photo/{filename}', [OccupantController::class, 'showKtpPhoto']);
 
 Route::middleware('auth:api')->group(function () {
     
@@ -41,6 +40,10 @@ Route::middleware('auth:api')->group(function () {
         
         // Dashboard Reports
         Route::get('/dashboard/report-monthly', [DashboardController::class, 'getMonthlyReport']);
+
+        // Get KTP Photo
+        Route::get('/ktp-photo/{filename}', [OccupantController::class, 'showKtpPhoto']);
+
     });
     
 });

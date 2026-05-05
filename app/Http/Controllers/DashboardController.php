@@ -12,62 +12,79 @@ class DashboardController extends Controller
 {
     public function getMonthlyReport(Request $request)
     {
-        $year = $request->query('year', Carbon::now()->year);
+        // Get unique years that have data
+        $paymentYears = PaymentModel::select(DB::raw('YEAR(payment_date) as year'))
+            ->distinct()
+            ->pluck('year')
+            ->toArray();
+        
+        $expenseYears = ExpenseModel::select(DB::raw('YEAR(expense_date) as year'))
+            ->distinct()
+            ->pluck('year')
+            ->toArray();
 
-        // Get monthly income
-        $income = PaymentModel::whereYear('payment_date', $year)
-            ->where('payment_status', 'paid')
+        $availableYears = array_unique(array_merge($paymentYears, $expenseYears));
+        sort($availableYears);
+
+        if (empty($availableYears)) {
+            $availableYears = [(int)Carbon::now()->year];
+        }
+
+        // Get all income grouped by year and month
+        $incomeData = PaymentModel::where('payment_status', 'success')
             ->select(
+                DB::raw('YEAR(payment_date) as year'),
                 DB::raw('MONTH(payment_date) as month'),
                 DB::raw('SUM(payment_amount) as total_income')
             )
-            ->groupBy('month')
+            ->groupBy('year', 'month')
             ->get()
-            ->keyBy('month');
+            ->groupBy('year');
 
-        // Get monthly expenses
-        $expenses = ExpenseModel::whereYear('expense_date', $year)
-            ->select(
+        // Get all expenses grouped by year and month
+        $expenseData = ExpenseModel::select(
+                DB::raw('YEAR(expense_date) as year'),
                 DB::raw('MONTH(expense_date) as month'),
                 DB::raw('SUM(expense_amount) as total_expense')
             )
-            ->groupBy('month')
+            ->groupBy('year', 'month')
             ->get()
-            ->keyBy('month');
+            ->groupBy('year');
 
-        $report = [];
+        $fullReport = [];
         $runningBalance = 0;
 
-        // Optionally, calculate balance from previous years
-        $previousIncome = PaymentModel::where('payment_date', '<', Carbon::create($year, 1, 1))
-            ->where('payment_status', 'paid')
-            ->sum('payment_amount');
-        
-        $previousExpense = ExpenseModel::where('expense_date', '<', Carbon::create($year, 1, 1))
-            ->sum('expense_amount');
+        foreach ($availableYears as $year) {
+            $yearReport = [];
+            $yearIncome = $incomeData->get($year)?->keyBy('month') ?? collect();
+            $yearExpense = $expenseData->get($year)?->keyBy('month') ?? collect();
 
-        $runningBalance = $previousIncome - $previousExpense;
+            for ($m = 1; $m <= 12; $m++) {
+                $inc = $yearIncome->get($m)->total_income ?? 0;
+                $exp = $yearExpense->get($m)->total_expense ?? 0;
+                $balance = $inc - $exp;
+                $runningBalance += $balance;
 
-        for ($m = 1; $m <= 12; $m++) {
-            $monthlyIncome = $income->has($m) ? (float) $income[$m]->total_income : 0;
-            $monthlyExpense = $expenses->has($m) ? (float) $expenses[$m]->total_expense : 0;
-            $monthlyBalance = $monthlyIncome - $monthlyExpense;
-            $runningBalance += $monthlyBalance;
+                $yearReport[] = [
+                    'month' => $m,
+                    'month_name' => Carbon::create(null, $m, 1)->format('F'),
+                    'income' => (float)$inc,
+                    'expense' => (float)$exp,
+                    'balance' => (float)$balance,
+                    'running_balance' => (float)$runningBalance
+                ];
+            }
 
-            $report[] = [
-                'month' => $m,
-                'month_name' => Carbon::create()->month($m)->format('F'),
-                'income' => $monthlyIncome,
-                'expense' => $monthlyExpense,
-                'balance' => $monthlyBalance,
-                'running_balance' => $runningBalance
+            $fullReport[] = [
+                'year' => (int)$year,
+                'monthly_data' => $yearReport
             ];
         }
 
         return response()->json([
-            'message' => 'Success retrieve monthly report',
-            'year' => $year,
-            'data' => $report
+            'message' => 'Success retrieve all-time monthly report',
+            'total_balance' => (float)$runningBalance,
+            'years' => $fullReport
         ]);
     }
 }

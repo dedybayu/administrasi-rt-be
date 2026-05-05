@@ -43,6 +43,7 @@ class OccupantModel extends Model
 
     public function getOccupantKtpUrlAttribute()
     {
-        return $this->occupant_ktp_photo ? asset('storage/' . $this->occupant_ktp_photo) : null;
+        // return $this->occupant_ktp_photo ? asset('api/ktp-photo/' . $this->occupant_ktp_photo) : null;
+        return $this->occupant_ktp_photo;
     }
 }

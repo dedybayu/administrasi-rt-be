@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\DuesTypeModel;
+use App\Models\PaymentModel;
+use App\Models\ExpenseModel;
 use Illuminate\Database\Seeder;
 use App\Models\HouseModel;
 use App\Models\OccupantModel;
@@ -114,5 +116,61 @@ class RtSeeder extends Seeder
             'dues_type_name' => 'Iuran Kebersihan',
             'dues_type_amount' => 15000,
         ]);
+
+        // 8. Create payments for permanent occupants
+        foreach ($permanentOccupants as $index => $occupant) {
+            // Get the house occupant record to get house_occupant_id
+            $houseOccupant = HouseOccupantModel::where('occupant_id', $occupant->occupant_id)
+                ->where('is_current', true)
+                ->first();
+
+            if (!$houseOccupant) continue;
+
+            // 12 months of payment history
+            for ($i = 0; $i < 12; $i++) {
+                $date = $now->copy()->subMonths($i);
+                // Randomly decide if this payment is successful (success) or failed/unpaid (rejected)
+                $isSuccess = rand(1, 100) <= rand(60, 90);
+                
+                // We create a record for each dues type per month
+                foreach ([1, 2] as $typeId) {
+                    $amount = ($typeId == 1) ? 100000 : 15000;
+                    
+                    PaymentModel::create([
+                        'dues_type_id' => $typeId,
+                        'payer_occupant_id' => $occupant->occupant_id,
+                        'house_occupant_id' => $houseOccupant->house_occupant_id,
+                        'payment_amount' => $isSuccess ? $amount : 0,
+                        'payment_date' => $date->toDateString(),
+                        'payment_period_month' => $date->month,
+                        'payment_period_year' => $date->year,
+                        'payment_status' => $isSuccess ? 'success' : 'rejected',
+                    ]);
+                }
+            }
+        }
+
+        // 9. Create sample expenses for the last 12 months
+        $expenseItems = [
+            ['name' => 'Gaji Satpam', 'amount' => 1500000],
+            ['name' => 'Biaya Kebersihan Lingkungan', 'amount' => 500000],
+            ['name' => 'Listrik Fasilitas Umum', 'amount' => 300000],
+            ['name' => 'Perbaikan Lampu Jalan', 'amount' => 200000, 'random' => true],
+            ['name' => 'Kegiatan Kerja Bakti', 'amount' => 150000, 'random' => true],
+        ];
+
+        for ($i = 0; $i < 12; $i++) {
+            $date = $now->copy()->subMonths($i);
+            foreach ($expenseItems as $item) {
+                // If random is true, only create 50% of the time
+                if (isset($item['random']) && $item['random'] && rand(0, 1) === 0) continue;
+
+                ExpenseModel::create([
+                    'expense_description' => $item['name'] . ' - ' . $date->format('F Y'),
+                    'expense_amount' => $item['amount'],
+                    'expense_date' => $date->copy()->startOfMonth()->addDays(rand(1, 28))->toDateString(),
+                ]);
+            }
+        }
     }
 }
