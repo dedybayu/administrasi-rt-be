@@ -151,7 +151,7 @@ class RtSeeder extends Seeder
                         'payment_date' => $date->toDateString(),
                         'payment_period_month' => $date->month,
                         'payment_period_year' => $date->year,
-                        'payment_status' => $isSuccess ? 'success' : 'rejected',
+                        'payment_status' => $isSuccess ? 'success' : 'pending',
                     ]);
                 }
             }

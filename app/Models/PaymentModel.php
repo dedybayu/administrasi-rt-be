@@ -21,7 +21,15 @@ class PaymentModel extends Model
         'payment_period_month',
         'payment_period_year',
         'payment_status',
+        'payment_proof',
     ];
+
+    protected $appends = ['payment_proof_url'];
+
+    public function getPaymentProofUrlAttribute()
+    {
+        return $this->payment_proof ? url('api/payment-proof/' . $this->payment_proof) : null;
+    }
 
     protected $casts = [
         'payment_amount' => 'decimal:2',

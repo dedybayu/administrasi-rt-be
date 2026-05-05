@@ -11,22 +11,30 @@ class PaymentController extends Controller
     public function index()
     {
         $payments = PaymentModel::with([
-            'duesType:dues_type_id,dues_type_name,dues_type_amount',
+            'duesType:dues_type_id,dues_type_name',
             'payerOccupant:occupant_id,occupant_name',
-            'houseOccupant:house_occupant_id,house_id,occupant_id',
+            'houseOccupant:house_occupant_id,house_id',
             'houseOccupant.house:house_id,house_name,house_number',
-            'houseOccupant.occupant:occupant_id,occupant_name'
-        ])->get([
-            'payment_id',
-            'dues_type_id',
-            'payer_occupant_id',
-            'house_occupant_id',
-            'payment_amount',
-            'payment_date',
-            'payment_period_month',
-            'payment_period_year',
-            'payment_status'
-        ]);
+        ])
+        ->orderBy('payment_period_year', 'desc')
+        ->orderBy('payment_period_month', 'desc')
+        ->orderBy('created_at', 'desc')
+        ->get()
+        ->map(function ($p) {
+            return [
+                'payment_id' => $p->payment_id,
+                'payment_amount' => $p->payment_amount,
+                'payment_date' => $p->payment_date,
+                'payment_period_month' => $p->payment_period_month,
+                'payment_period_year' => $p->payment_period_year,
+                'payment_status' => $p->payment_status,
+                'payment_proof' => $p->payment_proof,
+                'payment_proof_url' => $p->payment_proof_url,
+                'occupant_name' => $p->payerOccupant->occupant_name ?? '-',
+                'house_name' => ($p->houseOccupant->house->house_name ?? '') . ' ' . ($p->houseOccupant->house->house_number ?? ''),
+                'dues_type_name' => $p->duesType->dues_type_name ?? '-',
+            ];
+        });
 
         return response()->json([
             'message' => 'Success retrieve all payments',
@@ -41,17 +49,26 @@ class PaymentController extends Controller
             'payer_occupant_id' => 'required|exists:m_occupants,occupant_id',
             'house_occupant_id' => 'required|exists:r_house_occupants,house_occupant_id',
             'payment_amount' => 'required|numeric|min:0',
-            'payment_date' => 'required|date',
+            'payment_date' => 'nullable|date',
             'payment_period_month' => 'required|integer|min:1|max:12',
             'payment_period_year' => 'required|integer|min:2000',
-            'payment_status' => 'required|string|in:pending,paid,failed',
+            'payment_status' => 'nullable|string|in:pending,success,rejected',
+            'payment_proof' => 'nullable|image|max:2048',
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 400);
         }
 
-        $payment = PaymentModel::create($request->all());
+        $data = $request->all();
+        if ($request->hasFile('payment_proof')) {
+            $file = $request->file('payment_proof');
+            $filename = $file->hashName();
+            $file->storeAs('payment_proofs', $filename, 'public');
+            $data['payment_proof'] = $filename;
+        }
+
+        $payment = PaymentModel::create($data);
 
         return response()->json([
             'message' => 'Payment created successfully',
@@ -67,8 +84,8 @@ class PaymentController extends Controller
                 'duesType:dues_type_id,dues_type_name,dues_type_amount',
                 'payerOccupant:occupant_id,occupant_name',
                 'houseOccupant:house_occupant_id,house_id,occupant_id',
-                'house_occupant.house:house_id,house_name,house_number',
-                'house_occupant.occupant:occupant_id,occupant_name'
+                'houseOccupant.house:house_id,house_name,house_number',
+                'houseOccupant.occupant:occupant_id,occupant_name'
             ])
         ]);
     }
@@ -80,17 +97,31 @@ class PaymentController extends Controller
             'payer_occupant_id' => 'sometimes|required|exists:m_occupants,occupant_id',
             'house_occupant_id' => 'sometimes|required|exists:r_house_occupants,house_occupant_id',
             'payment_amount' => 'sometimes|required|numeric|min:0',
-            'payment_date' => 'sometimes|required|date',
+            'payment_date' => 'sometimes|nullable|date',
             'payment_period_month' => 'sometimes|required|integer|min:1|max:12',
             'payment_period_year' => 'sometimes|required|integer|min:2000',
-            'payment_status' => 'sometimes|required|string|in:pending,paid,failed',
+            'payment_status' => 'nullable|string|in:pending,success,rejected',
+            'payment_proof' => 'nullable|image|max:2048',
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 400);
         }
 
-        $payment->update($request->all());
+        $data = $request->all();
+        if ($request->hasFile('payment_proof')) {
+            // Delete old file if exists
+            if ($payment->payment_proof) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete('payment_proofs/' . $payment->payment_proof);
+            }
+
+            $file = $request->file('payment_proof');
+            $filename = $file->hashName();
+            $file->storeAs('payment_proofs', $filename, 'public');
+            $data['payment_proof'] = $filename;
+        }
+
+        $payment->update($data);
 
         return response()->json([
             'message' => 'Payment updated successfully',
@@ -100,7 +131,20 @@ class PaymentController extends Controller
 
     public function destroy(PaymentModel $payment)
     {
-        PaymentModel::destroy($payment->payment_id);
+        if ($payment->payment_proof) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete('payment_proofs/' . $payment->payment_proof);
+        }
+        $payment->delete();
         return response()->json(['message' => 'Payment deleted successfully']);
+    }
+
+    public function getProof($filename)
+    {
+        $path = 'payment_proofs/' . $filename;
+        if (!\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            return response()->json(['message' => 'Proof not found'], 404);
+        }
+
+        return response()->file(\Illuminate\Support\Facades\Storage::disk('public')->path($path));
     }
 }

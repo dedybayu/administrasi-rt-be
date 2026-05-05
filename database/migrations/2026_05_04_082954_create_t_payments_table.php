@@ -17,10 +17,11 @@ return new class extends Migration
             $table->unsignedBigInteger('payer_occupant_id');
             $table->unsignedBigInteger('house_occupant_id');
             $table->decimal('payment_amount', 15, 2);
-            $table->date('payment_date');
+            $table->date('payment_date')->nullable();
             $table->integer('payment_period_month');
             $table->integer('payment_period_year');
             $table->enum('payment_status', ['pending', 'success', 'rejected'])->nullable()->default(null);
+            $table->string('payment_proof')->nullable()->default(null);
 
             $table->foreign('dues_type_id')->references('dues_type_id')->on('m_dues_types')->onDelete('cascade');
             $table->foreign('payer_occupant_id')->references('occupant_id')->on('m_occupants')->onDelete('cascade');

@@ -11,6 +11,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\WargaController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\DuesTypeController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/refresh-token', [AuthController::class, 'refresh']);
@@ -39,12 +40,14 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('house-occupants', HouseOccupantController::class);
         Route::apiResource('payments', PaymentController::class);
         Route::apiResource('expenses', ExpenseController::class);
+        Route::apiResource('dues-types', DuesTypeController::class);
         
         // Dashboard Reports
         Route::get('/dashboard/report-monthly', [DashboardController::class, 'getMonthlyReport']);
 
-        // Get KTP Photo
+        // Get Proof Photo
         Route::get('/ktp-photo/{filename}', [OccupantController::class, 'showKtpPhoto']);
+        Route::get('/payment-proof/{filename}', [PaymentController::class, 'getProof']);
 
     });
     
