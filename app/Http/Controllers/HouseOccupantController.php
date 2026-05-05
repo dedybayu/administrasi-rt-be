@@ -39,28 +39,16 @@ class HouseOccupantController extends Controller
         ], 201);
     }
 
-    public function show($id)
+    public function show(HouseOccupantModel $houseOccupant)
     {
-        $houseOccupant = HouseOccupantModel::with(['house', 'occupant'])->find($id);
-
-        if (!$houseOccupant) {
-            return response()->json(['message' => 'House occupant not found'], 404);
-        }
-
         return response()->json([
             'message' => 'Success retrieve house occupant detail',
-            'data' => $houseOccupant
+            'data' => $houseOccupant->load(['house', 'occupant'])
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, HouseOccupantModel $houseOccupant)
     {
-        $houseOccupant = HouseOccupantModel::find($id);
-
-        if (!$houseOccupant) {
-            return response()->json(['message' => 'House occupant not found'], 404);
-        }
-
         $validator = Validator::make($request->all(), [
             'house_id' => 'sometimes|required|exists:m_houses,house_id',
             'occupant_id' => 'sometimes|required|exists:m_occupants,occupant_id',
@@ -81,16 +69,10 @@ class HouseOccupantController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    public function destroy(HouseOccupantModel $houseOccupant)
     {
-        $houseOccupant = HouseOccupantModel::find($id);
-
-        if (!$houseOccupant) {
-            return response()->json(['message' => 'House occupant not found'], 404);
-        }
-
-        $houseOccupant->delete();
-
+        HouseOccupantModel::destroy($houseOccupant->house_occupant_id);
+        
         return response()->json(['message' => 'House occupant deleted successfully']);
     }
 }

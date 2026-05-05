@@ -42,28 +42,16 @@ class PaymentController extends Controller
         ], 201);
     }
 
-    public function show($id)
+    public function show(PaymentModel $payment)
     {
-        $payment = PaymentModel::with(['duesType', 'payerOccupant', 'houseOccupant.house', 'houseOccupant.occupant'])->find($id);
-
-        if (!$payment) {
-            return response()->json(['message' => 'Payment not found'], 404);
-        }
-
         return response()->json([
             'message' => 'Success retrieve payment detail',
-            'data' => $payment
+            'data' => $payment->load(['duesType', 'payerOccupant', 'houseOccupant.house', 'houseOccupant.occupant'])
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, PaymentModel $payment)
     {
-        $payment = PaymentModel::find($id);
-
-        if (!$payment) {
-            return response()->json(['message' => 'Payment not found'], 404);
-        }
-
         $validator = Validator::make($request->all(), [
             'dues_type_id' => 'sometimes|required|exists:m_dues_types,dues_type_id',
             'payer_occupant_id' => 'sometimes|required|exists:m_occupants,occupant_id',
@@ -87,16 +75,9 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    public function destroy(PaymentModel $payment)
     {
-        $payment = PaymentModel::find($id);
-
-        if (!$payment) {
-            return response()->json(['message' => 'Payment not found'], 404);
-        }
-
-        $payment->delete();
-
+        PaymentModel::destroy($payment->payment_id);
         return response()->json(['message' => 'Payment deleted successfully']);
     }
 }

@@ -9,6 +9,7 @@ use App\Http\Controllers\HouseController;
 use App\Http\Controllers\HouseOccupantController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\WargaController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/refresh-token', [AuthController::class, 'refresh']);
@@ -20,7 +21,12 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/infort', [InfoController::class, 'infort'])->middleware('is_rt');
     
     // Khusus Warga
-    Route::get('/infowrg', [InfoController::class, 'infowrg'])->middleware('is_warga');
+    Route::middleware('is_warga')->group(function () {
+        Route::get('/infowrg', [InfoController::class, 'infowrg']);
+        Route::get('/warga/my-houses', [WargaController::class, 'myHouses']);
+        Route::get('/warga/my-payments', [WargaController::class, 'myPayments']);
+        Route::post('/warga/pay', [WargaController::class, 'payDues']);
+    });
     
     // Bersama (RT & Warga)
     Route::get('/infobersama', [InfoController::class, 'infobersama']);
