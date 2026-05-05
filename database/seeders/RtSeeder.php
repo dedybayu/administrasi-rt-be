@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\DuesTypeModel;
 use Illuminate\Database\Seeder;
 use App\Models\HouseModel;
 use App\Models\OccupantModel;
@@ -102,5 +103,16 @@ class RtSeeder extends Seeder
                 'occupant_id' => $occupant->occupant_id,
             ]);
         }
+
+        // 7. Create dues types
+        DuesTypeModel::create([
+            'dues_type_name' => 'Iuran Satpam',
+            'dues_type_amount' => 100000,
+        ]);
+
+        DuesTypeModel::create([
+            'dues_type_name' => 'Iuran Kebersihan',
+            'dues_type_amount' => 15000,
+        ]);
     }
 }
