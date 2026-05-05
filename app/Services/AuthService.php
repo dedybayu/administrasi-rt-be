@@ -75,14 +75,14 @@ class AuthService
         // Standard token used as access_token (15 mins TTL)
         $accessToken = $guard->setTTL(15)->tokenById($user->user_id);
 
-        // Separate token with 6 hours (360 mins) TTL for refresh token
-        $refreshToken = $guard->setTTL(360)->claims(['type' => 'refresh'])->tokenById($user->user_id);
+        // Separate token with 7 hours (420 mins) TTL for refresh token
+        $refreshToken = $guard->setTTL(420)->claims(['type' => 'refresh'])->tokenById($user->user_id);
 
         return [
             'access_token' => $accessToken,
             'refresh_token' => $refreshToken,
             'token_type' => 'bearer',
-            'expires_in' => $guard->factory()->getTTL() * 60,
+            'expires_in' => 15 * 60, // 15 minutes in seconds
             'user' => $user
         ];
     }

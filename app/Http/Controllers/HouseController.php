@@ -41,6 +41,7 @@ class HouseController extends Controller
 
     public function show(HouseModel $house)
     {
+        $house->load('houseOccupants.occupant');
         return response()->json([
             'message' => 'Success retrieve house detail',
             'data' => $house

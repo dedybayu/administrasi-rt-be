@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('house_id');
             $table->unsignedBigInteger('occupant_id');
             $table->date('start_in_date');
-            $table->date('end_in_date');
+            $table->date('end_in_date')->nullable()->default(null);
             $table->boolean('is_current')->default(true);
 
             $table->foreign('house_id')->references('house_id')->on('m_houses')->onDelete('cascade');
