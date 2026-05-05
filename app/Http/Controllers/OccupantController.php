@@ -111,4 +111,14 @@ class OccupantController extends Controller
 
         return response()->json(['message' => 'Occupant deleted successfully']);
     }
+
+    public function showKtpPhoto($filename)
+    {
+        $path = 'ktp_photos/' . $filename;
+        if (!Storage::disk('public')->exists($path)) {
+            return response()->json(['message' => 'Photo not found'], 404);
+        }
+
+        return response()->file(Storage::disk('public')->path($path));
+    }
 }
