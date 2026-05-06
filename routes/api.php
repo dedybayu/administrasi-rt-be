@@ -44,6 +44,10 @@ Route::middleware('auth:api')->group(function () {
         
         // Dashboard Reports
         Route::get('/dashboard/report-monthly', [DashboardController::class, 'getMonthlyReport']);
+        Route::get('/dashboard/report-detailed', [DashboardController::class, 'getDetailedReport']);
+        Route::get('/dashboard/report-cashflow', [DashboardController::class, 'getCashFlowReport']);
+        Route::get('/dashboard/report-cashflow-detailed', [DashboardController::class, 'getCashFlowDetailed']);
+        Route::get('/dashboard/report-cashflow-daily', [DashboardController::class, 'getCashFlowDaily']);
 
         // Get Proof Photo
         Route::get('/ktp-photo/{filename}', [OccupantController::class, 'showKtpPhoto']);

@@ -53,11 +53,28 @@ class PaymentController extends Controller
             'payment_period_month' => 'required|integer|min:1|max:12',
             'payment_period_year' => 'required|integer|min:2000',
             'payment_status' => 'nullable|string|in:pending,success,rejected',
-            'payment_proof' => 'nullable|image|max:2048',
+            'payment_proof' => 'required_if:payment_status,success|image|max:2048',
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 400);
+        }
+
+        // Check uniqueness for the combination
+        $exists = PaymentModel::where('dues_type_id', $request->dues_type_id)
+            ->where('payer_occupant_id', $request->payer_occupant_id)
+            ->where('house_occupant_id', $request->house_occupant_id)
+            ->where('payment_period_month', $request->payment_period_month)
+            ->where('payment_period_year', $request->payment_period_year)
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => [
+                    'dues_type_id' => ['Iuran untuk periode, rumah, dan warga ini sudah tercatat.']
+                ]
+            ], 400);
         }
 
         $data = $request->all();
@@ -101,11 +118,29 @@ class PaymentController extends Controller
             'payment_period_month' => 'sometimes|required|integer|min:1|max:12',
             'payment_period_year' => 'sometimes|required|integer|min:2000',
             'payment_status' => 'nullable|string|in:pending,success,rejected',
-            'payment_proof' => 'nullable|image|max:2048',
+            'payment_proof' => ($request->payment_status === 'success' && !$payment->payment_proof ? 'required' : 'nullable') . '|image|max:2048',
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 400);
+        }
+
+        // Check uniqueness for the combination (excluding current record)
+        $exists = PaymentModel::where('dues_type_id', $request->dues_type_id ?? $payment->dues_type_id)
+            ->where('payer_occupant_id', $request->payer_occupant_id ?? $payment->payer_occupant_id)
+            ->where('house_occupant_id', $request->house_occupant_id ?? $payment->house_occupant_id)
+            ->where('payment_period_month', $request->payment_period_month ?? $payment->payment_period_month)
+            ->where('payment_period_year', $request->payment_period_year ?? $payment->payment_period_year)
+            ->where('payment_id', '!=', $payment->payment_id)
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => [
+                    'dues_type_id' => ['Iuran untuk periode, rumah, dan warga ini sudah tercatat.']
+                ]
+            ], 400);
         }
 
         $data = $request->all();
