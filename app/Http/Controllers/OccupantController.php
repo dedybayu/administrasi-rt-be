@@ -79,7 +79,7 @@ class OccupantController extends Controller
 
     public function show(OccupantModel $occupant)
     {
-        $occupant->load(['houseOccupants.house', 'payments.duesType']);
+        $occupant->load(['houseOccupants.house', 'payments.duesType', 'users:user_id,username,occupant_id']);
         return response()->json([
             'message' => 'Success retrieve occupant detail',
             'data' => $occupant
