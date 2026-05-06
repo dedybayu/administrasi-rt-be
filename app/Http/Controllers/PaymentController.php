@@ -3,11 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\PaymentModel;
+use App\Services\PaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class PaymentController extends Controller
 {
+    protected $paymentService;
+
+    public function __construct(PaymentService $paymentService)
+    {
+        $this->paymentService = $paymentService;
+    }
+
     public function index()
     {
         $payments = PaymentModel::with([
@@ -60,37 +68,22 @@ class PaymentController extends Controller
             return response()->json($validator->errors(), 400);
         }
 
-        // Check uniqueness for the combination
-        $exists = PaymentModel::where('dues_type_id', $request->dues_type_id)
-            ->where('payer_occupant_id', $request->payer_occupant_id)
-            ->where('house_occupant_id', $request->house_occupant_id)
-            ->where('payment_period_month', $request->payment_period_month)
-            ->where('payment_period_year', $request->payment_period_year)
-            ->exists();
+        try {
+            $payment = $this->paymentService->createPayment(
+                $request->all(),
+                $request->file('payment_proof')
+            );
 
-        if ($exists) {
+            return response()->json([
+                'message' => 'Payment created successfully',
+                'data' => $payment->load(['duesType', 'payerOccupant', 'houseOccupant'])
+            ], 201);
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => 'The given data was invalid.',
-                'errors' => [
-                    'dues_type_id' => ['Iuran untuk periode, rumah, dan warga ini sudah tercatat.']
-                ]
-            ], 400);
+                'errors' => ['dues_type_id' => [$e->getMessage()]]
+            ], $e->getCode() ?: 400);
         }
-
-        $data = $request->all();
-        if ($request->hasFile('payment_proof')) {
-            $file = $request->file('payment_proof');
-            $filename = $file->hashName();
-            $file->storeAs('payment_proofs', $filename, 'public');
-            $data['payment_proof'] = $filename;
-        }
-
-        $payment = PaymentModel::create($data);
-
-        return response()->json([
-            'message' => 'Payment created successfully',
-            'data' => $payment->load(['duesType', 'payerOccupant', 'houseOccupant'])
-        ], 201);
     }
 
     public function show(PaymentModel $payment)
@@ -125,51 +118,28 @@ class PaymentController extends Controller
             return response()->json($validator->errors(), 400);
         }
 
-        // Check uniqueness for the combination (excluding current record)
-        $exists = PaymentModel::where('dues_type_id', $request->dues_type_id ?? $payment->dues_type_id)
-            ->where('payer_occupant_id', $request->payer_occupant_id ?? $payment->payer_occupant_id)
-            ->where('house_occupant_id', $request->house_occupant_id ?? $payment->house_occupant_id)
-            ->where('payment_period_month', $request->payment_period_month ?? $payment->payment_period_month)
-            ->where('payment_period_year', $request->payment_period_year ?? $payment->payment_period_year)
-            ->where('payment_id', '!=', $payment->payment_id)
-            ->exists();
+        try {
+            $payment = $this->paymentService->updatePayment(
+                $payment,
+                $request->all(),
+                $request->file('payment_proof')
+            );
 
-        if ($exists) {
+            return response()->json([
+                'message' => 'Payment updated successfully',
+                'data' => $payment->load(['duesType', 'payerOccupant', 'houseOccupant'])
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => 'The given data was invalid.',
-                'errors' => [
-                    'dues_type_id' => ['Iuran untuk periode, rumah, dan warga ini sudah tercatat.']
-                ]
-            ], 400);
+                'errors' => ['dues_type_id' => [$e->getMessage()]]
+            ], $e->getCode() ?: 400);
         }
-
-        $data = $request->all();
-        if ($request->hasFile('payment_proof')) {
-            // Delete old file if exists
-            if ($payment->payment_proof) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete('payment_proofs/' . $payment->payment_proof);
-            }
-
-            $file = $request->file('payment_proof');
-            $filename = $file->hashName();
-            $file->storeAs('payment_proofs', $filename, 'public');
-            $data['payment_proof'] = $filename;
-        }
-
-        $payment->update($data);
-
-        return response()->json([
-            'message' => 'Payment updated successfully',
-            'data' => $payment->load(['duesType', 'payerOccupant', 'houseOccupant'])
-        ]);
     }
 
     public function destroy(PaymentModel $payment)
     {
-        if ($payment->payment_proof) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete('payment_proofs/' . $payment->payment_proof);
-        }
-        $payment->delete();
+        $this->paymentService->deletePayment($payment);
         return response()->json(['message' => 'Payment deleted successfully']);
     }
 

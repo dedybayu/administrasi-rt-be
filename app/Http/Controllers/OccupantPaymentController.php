@@ -6,11 +6,19 @@ use App\Models\OccupantModel;
 use App\Models\HouseOccupantModel;
 use App\Models\PaymentModel;
 use App\Models\DuesTypeModel;
+use App\Services\PaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class OccupantPaymentController extends Controller
 {
+    protected $paymentService;
+
+    public function __construct(PaymentService $paymentService)
+    {
+        $this->paymentService = $paymentService;
+    }
+
     public function payDues(Request $request)
     {
         $user = auth('api')->user();
@@ -23,6 +31,7 @@ class OccupantPaymentController extends Controller
             'house_occupant_id' => 'required|exists:r_house_occupants,house_occupant_id',
             'payment_period_month' => 'required|integer|min:1|max:12',
             'payment_period_year' => 'required|integer|min:2000',
+            'payment_proof' => 'required|image|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -38,24 +47,27 @@ class OccupantPaymentController extends Controller
             return response()->json(['message' => 'Unauthorized access to this house record'], 403);
         }
 
-        // Get amount from dues type
-        $duesType = DuesTypeModel::find($request->dues_type_id);
-        
-        $payment = PaymentModel::create([
-            'dues_type_id' => $request->dues_type_id,
-            'payer_occupant_id' => $user->occupant_id,
-            'house_occupant_id' => $request->house_occupant_id,
-            'payment_amount' => $duesType->dues_type_amount,
-            'payment_date' => now(),
-            'payment_period_month' => $request->payment_period_month,
-            'payment_period_year' => $request->payment_period_year,
-            'payment_status' => 'paid', // Assuming automatic success for this task
-        ]);
+        try {
+            $data = $request->only([
+                'dues_type_id',
+                'house_occupant_id',
+                'payment_period_month',
+                'payment_period_year'
+            ]);
+            $data['payer_occupant_id'] = $user->occupant_id;
 
-        return response()->json([
-            'message' => 'Payment successful',
-            'data' => $payment->load(['duesType', 'houseOccupant.house'])
-        ], 201);
+            $payment = $this->paymentService->occupantPay(
+                $data,
+                $request->file('payment_proof')
+            );
+
+            return response()->json([
+                'message' => 'Payment proof uploaded and waiting for confirmation',
+                'data' => $payment->load(['duesType', 'houseOccupant.house'])
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
+        }
     }
 
     public function dashboard()
