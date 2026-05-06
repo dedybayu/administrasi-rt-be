@@ -26,6 +26,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/infowrg', [InfoController::class, 'infowrg']);
         Route::get('/warga/my-houses', [WargaController::class, 'myHouses']);
         Route::get('/warga/my-payments', [WargaController::class, 'myPayments']);
+        Route::get('/warga/my-dues', [WargaController::class, 'myDues']);
+        Route::get('/warga/dashboard', [WargaController::class, 'dashboard']);
         Route::post('/warga/pay', [WargaController::class, 'payDues']);
     });
     
