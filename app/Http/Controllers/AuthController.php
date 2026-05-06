@@ -54,6 +54,37 @@ class AuthController extends Controller
     }
 
     /**
+     * Update the authenticated user's profile.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+        $rules = [
+            'password' => 'nullable|min:6|confirmed',
+        ];
+
+        if ($user->is_rt) {
+            $rules['username'] = 'required|min:4|unique:m_users,username,' . $user->user_id . ',user_id';
+        }
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 400);
+        }
+
+        $this->authService->updateProfile($request->only('username', 'password'));
+
+        return response()->json(['message' => 'Profil berhasil diperbarui']);
+    }
+
+    /**
      * Log the user out (Invalidate the token).
      *
      * @return \Illuminate\Http\JsonResponse

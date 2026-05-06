@@ -60,6 +60,29 @@ class AuthService
     }
 
     /**
+     * Update user profile.
+     * 
+     * @param array $data
+     * @return UserModel
+     */
+    public function updateProfile(array $data)
+    {
+        /** @var UserModel $user */
+        $user = Auth::guard('api')->user();
+        
+        if (isset($data['username']) && $user->is_rt) {
+            $user->username = $data['username'];
+        }
+
+        if (isset($data['password'])) {
+            $user->password = bcrypt($data['password']);
+        }
+
+        $user->save();
+        return $user;
+    }
+
+    /**
      * Format the token response structure.
      * 
      * @param string $token

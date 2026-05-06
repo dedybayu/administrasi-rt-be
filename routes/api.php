@@ -59,4 +59,6 @@ Route::middleware('auth:api')->group(function () {
 
     });
     
+    // Profile
+    Route::post('/update-profile', [AuthController::class, 'updateProfile']);
 });
