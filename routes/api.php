@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\OccupantPaymentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -9,7 +10,7 @@ use App\Http\Controllers\HouseController;
 use App\Http\Controllers\HouseOccupantController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\WargaController;
+use App\Http\Controllers\OccupantDashboardController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\DuesTypeController;
 
@@ -23,12 +24,13 @@ Route::middleware('auth:api')->group(function () {
     
     // Khusus Warga
     Route::middleware('is_warga')->group(function () {
-        Route::get('/infowrg', [InfoController::class, 'infowrg']);
-        Route::get('/warga/my-houses', [WargaController::class, 'myHouses']);
-        Route::get('/warga/my-payments', [WargaController::class, 'myPayments']);
-        Route::get('/warga/my-dues', [WargaController::class, 'myDues']);
-        Route::get('/warga/dashboard', [WargaController::class, 'dashboard']);
-        Route::post('/warga/pay', [WargaController::class, 'payDues']);
+        Route::get('/warga/my-houses', [OccupantDashboardController::class, 'myHouses']);
+        Route::get('/warga/my-payments', [OccupantDashboardController::class, 'myPayments']);
+        Route::get('/warga/dashboard', [OccupantDashboardController::class, 'dashboard']);
+
+        // Iuran Saya
+        Route::get('/warga/my-dues', [OccupantPaymentController::class, 'myDues']);
+        Route::post('/warga/pay', [OccupantPaymentController::class, 'payDues']);
     });
     
     // Bersama (RT & Warga)
