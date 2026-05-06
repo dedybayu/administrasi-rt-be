@@ -153,6 +153,11 @@ class OccupantController extends Controller
             Storage::disk('public')->delete('ktp_photos/' . $occupant->occupant_ktp_photo);
         }
 
+        $user = UserModel::where('occupant_id', $occupant->occupant_id)->first();
+        if ($user) {
+            $user->delete();
+        }
+
         OccupantModel::destroy($occupant->occupant_id);
 
         return response()->json(['message' => 'Occupant deleted successfully']);
