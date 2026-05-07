@@ -145,5 +145,49 @@ Pastikan root directory web server diarahkan ke folder `/public` dari project in
 - **Role RT**: `ketuart` / `password123`
 - **Role Warga**: (Username dapat dilihat di tabel `m_users` setelah seeding, password defaultnya adalah `warga123`)
 
-## Catatan
-Project ini membutuhkan frontend agar dapat digunakan secara visual. Pastikan repositori frontend juga dijalankan dan diarahkan ke URL backend ini melalui file `.env` di sisi frontend.
+---
+
+## Dokumentasi API
+
+Seluruh request API (kecuali login & refresh token) wajib menyertakan header:
+`Authorization: Bearer <your_jwt_token>`
+
+### 1. Autentikasi
+| Method | Endpoint | Deskripsi |
+| :--- | :--- | :--- |
+| `POST` | `/api/login` | Masuk ke sistem dan mendapatkan token JWT |
+| `POST` | `/api/refresh-token` | Memperbarui token JWT yang sudah expired |
+| `POST` | `/api/update-profile` | Memperbarui username atau password pengguna |
+
+### 2. Dashboard & Laporan (Khusus RT)
+| Method | Endpoint | Deskripsi |
+| :--- | :--- | :--- |
+| `GET` | `/api/dashboard/report-cashflow` | Laporan arus kas tahunan (Bulanan) |
+| `GET` | `/api/dashboard/report-cashflow-detailed` | Rincian transaksi bulanan (Pemasukan & Pengeluaran) |
+| `GET` | `/api/dashboard/report-cashflow-daily` | Grafik transaksi harian dalam satu bulan |
+
+### 3. Manajemen Data (Khusus RT)
+| Method | Endpoint | Deskripsi |
+| :--- | :--- | :--- |
+| `GET/POST` | `/api/occupants` | List & Tambah data Warga (dengan upload KTP) |
+| `GET/PUT/DELETE` | `/api/occupants/{id}` | Detail, Update, & Hapus data Warga |
+| `GET/POST` | `/api/houses` | List & Tambah data Rumah |
+| `GET/POST` | `/api/house-occupants` | Manajemen penghuni rumah (Tetap/Kontrak) |
+| `GET/POST` | `/api/payments` | List & Catat pembayaran iuran |
+| `GET/POST` | `/api/expenses` | List & Catat pengeluaran kas |
+| `GET` | `/api/dues-types` | List jenis iuran (Satpam, Kebersihan) |
+
+### 4. Fitur Warga
+| Method | Endpoint | Deskripsi |
+| :--- | :--- | :--- |
+| `GET` | `/api/warga/dashboard` | Ringkasan tagihan & status iuran warga |
+| `GET` | `/api/warga/my-dues` | List tagihan iuran yang harus dibayar |
+| `POST` | `/api/warga/pay` | Konfirmasi pembayaran iuran (Upload bukti transfer) |
+
+### 5. Media (Files)
+| Method | Endpoint | Deskripsi |
+| :--- | :--- | :--- |
+| `GET` | `/api/ktp-photo/{filename}` | Mengambil file foto KTP |
+| `GET` | `/api/payment-proof/{filename}` | Mengambil file bukti pembayaran |
+
+---
