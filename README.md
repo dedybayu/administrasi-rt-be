@@ -2,8 +2,8 @@
 
 Sistem manajemen administrasi RT berbasis web yang dibangun menggunakan Laravel 11. Repositori ini berisi logika bisnis, manajemen database, dan API endpoint yang digunakan oleh frontend.
 
-### 🚀 Live Demo
-Aplikasi ini sudah dideploy dan dapat diakses melalui:
+### Live Demo
+Aplikasi ini sudah saya deploy memakai server saya sendiri dan dapat diakses melalui:
 **[https://adm-rt.dbsnetwork.my.id/](https://adm-rt.dbsnetwork.my.id/)**
 
 Backend API: **[https://api-rt.dbsnetwork.my.id/api](https://api-rt.dbsnetwork.my.id/api)**
@@ -13,6 +13,12 @@ Backend API: **[https://api-rt.dbsnetwork.my.id/api](https://api-rt.dbsnetwork.m
 - **Autentikasi**: JWT (JSON Web Token) via `php-open-source-saver/jwt-auth`
 - **Database**: MySQL
 - **Bahasa**: PHP 8.2+
+
+---
+
+## Struktur Database (ERD)
+Berikut adalah Entity Relationship Diagram (ERD) dari sistem Administrasi RT ini:
+![ERD Administrasi RT](./readme_img/erd-administrasi-rt.png)
 
 ---
 
