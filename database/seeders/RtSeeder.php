@@ -61,50 +61,97 @@ class RtSeeder extends Seeder
             ]);
         }
 
-        // 3. Create 3 contract occupants (kontrak) for houses 16, 17, and 18
-        $contractOccupants = [];
-        for ($i = 1; $i <= 3; $i++) {
+        // 3. Handle the 5 remaining houses (16 to 20)
+        // House 16 & 17: Active Contract
+        // House 18: Active Sementara
+        // House 19: Empty but has history
+        // House 20: Completely Empty
+        
+        $nonPermanentOccupants = [];
+        
+        // House 16 & 17 (Contract)
+        for ($i = 0; $i < 2; $i++) {
             $occupant = OccupantModel::create([
                 'occupant_name' => $faker->name,
-                'occupant_ktp_photo' => 'ktp_kontrak_' . $i . '.jpg',
+                'occupant_ktp_photo' => 'ktp_kontrak_' . ($i+1) . '.jpg',
                 'occupant_status' => 'kontrak',
                 'occupant_phone_number' => $faker->phoneNumber,
                 'is_married' => false,
                 'occupant_gender' => $i % 2 == 0 ? 'L' : 'P',
             ]);
-            $contractOccupants[] = $occupant;
+            $nonPermanentOccupants[] = $occupant;
 
             HouseOccupantModel::create([
-                'house_id' => $houses[15 + $i - 1]->house_id,
+                'house_id' => $houses[15 + $i]->house_id,
                 'occupant_id' => $occupant->occupant_id,
                 'start_in_date' => $now->copy()->subMonths(rand(1, 6))->toDateString(),
-                'end_in_date' => $now->copy()->addMonths(rand(1, 6))->toDateString(),
+                'end_in_date' => $now->copy()->addMonths(rand(1, 12))->toDateString(),
                 'is_current' => true,
                 'is_head_family' => true,
             ]);
         }
-        // House 19 and 20 are left completely empty
 
-        // 4. Create 1 User for Ketua RT, using the first permanent occupant
+        // House 18 (Sementara)
+        $tempOccupant = OccupantModel::create([
+            'occupant_name' => $faker->name,
+            'occupant_ktp_photo' => 'ktp_sementara_1.jpg',
+            'occupant_status' => 'kontrak',
+            'occupant_phone_number' => $faker->phoneNumber,
+            'is_married' => false,
+            'occupant_gender' => 'L',
+        ]);
+        $nonPermanentOccupants[] = $tempOccupant;
+
+        HouseOccupantModel::create([
+            'house_id' => $houses[17]->house_id,
+            'occupant_id' => $tempOccupant->occupant_id,
+            'start_in_date' => $now->copy()->subWeeks(rand(1, 4))->toDateString(),
+            'end_in_date' => $now->copy()->addWeeks(rand(1, 4))->toDateString(),
+            'is_current' => true,
+            'is_head_family' => true,
+        ]);
+
+        // House 19 (History - Currently Empty)
+        $historyOccupant = OccupantModel::create([
+            'occupant_name' => $faker->name . ' (Mantan)',
+            'occupant_ktp_photo' => 'ktp_history_1.jpg',
+            'occupant_status' => 'kontrak',
+            'occupant_phone_number' => $faker->phoneNumber,
+            'is_married' => true,
+            'occupant_gender' => 'P',
+        ]);
+
+        HouseOccupantModel::create([
+            'house_id' => $houses[18]->house_id,
+            'occupant_id' => $historyOccupant->occupant_id,
+            'start_in_date' => $now->copy()->subYears(2)->toDateString(),
+            'end_in_date' => $now->copy()->subMonths(2)->toDateString(),
+            'is_current' => false,
+            'is_head_family' => true,
+        ]);
+
+        // House 20 is left completely empty without any record
+
+        // 4. Create 1 User for Ketua RT (No occupant link)
         UserModel::create([
             'username' => 'ketuart',
             'password' => Hash::make('password123'),
             'is_rt' => true,
-            'occupant_id' => $permanentOccupants[0]->occupant_id,
+            'occupant_id' => null,
         ]);
 
-        // 5. Create User accounts for the remaining 14 permanent occupants
-        for ($i = 1; $i < 15; $i++) {
+        // 5. Create User accounts for ALL 15 permanent occupants
+        foreach ($permanentOccupants as $index => $occupant) {
             UserModel::create([
-                'username' => 'warga' . ($i + 1),
+                'username' => 'warga' . ($index + 1),
                 'password' => Hash::make('warga123'),
                 'is_rt' => false,
-                'occupant_id' => $permanentOccupants[$i]->occupant_id,
+                'occupant_id' => $occupant->occupant_id,
             ]);
         }
 
-        // 6. Create User accounts for the 3 contract occupants
-        foreach ($contractOccupants as $index => $occupant) {
+        // 6. Create User accounts for the 3 active non-permanent occupants
+        foreach ($nonPermanentOccupants as $index => $occupant) {
             UserModel::create([
                 'username' => 'warga' . (15 + $index + 1),
                 'password' => Hash::make('warga123'),
@@ -136,8 +183,6 @@ class RtSeeder extends Seeder
             // 12 months of payment history
             for ($i = 0; $i < 12; $i++) {
                 $date = $now->copy()->subMonths($i);
-                // Randomly decide if this payment is successful (success) or failed/unpaid (rejected)
-                $isSuccess = rand(1, 100) <= rand(60, 90);
                 
                 // We create a record for each dues type per month
                 foreach ([1, 2] as $typeId) {
@@ -147,23 +192,23 @@ class RtSeeder extends Seeder
                         'dues_type_id' => $typeId,
                         'payer_occupant_id' => $occupant->occupant_id,
                         'house_occupant_id' => $houseOccupant->house_occupant_id,
-                        'payment_amount' => $isSuccess ? $amount : 0,
+                        'payment_amount' => $amount,
                         'payment_date' => $date->toDateString(),
                         'payment_period_month' => $date->month,
                         'payment_period_year' => $date->year,
-                        'payment_status' => $isSuccess ? 'success' : 'pending',
+                        'payment_status' => 'success',
                     ]);
                 }
             }
         }
 
-        // 9. Create sample expenses for the last 12 months
+        // 9. Create sample expenses for the last 12 months (Lowered to keep balance positive)
         $expenseItems = [
-            ['name' => 'Gaji Satpam', 'amount' => 1500000],
-            ['name' => 'Biaya Kebersihan Lingkungan', 'amount' => 500000],
-            ['name' => 'Listrik Fasilitas Umum', 'amount' => 300000],
-            ['name' => 'Perbaikan Lampu Jalan', 'amount' => 200000, 'random' => true],
-            ['name' => 'Kegiatan Kerja Bakti', 'amount' => 150000, 'random' => true],
+            ['name' => 'Gaji Satpam', 'amount' => 1000000],
+            ['name' => 'Biaya Kebersihan Lingkungan', 'amount' => 300000],
+            ['name' => 'Listrik Fasilitas Umum', 'amount' => 200000],
+            ['name' => 'Perbaikan Lampu Jalan', 'amount' => 100000, 'random' => true],
+            ['name' => 'Kegiatan Kerja Bakti', 'amount' => 100000, 'random' => true],
         ];
 
         for ($i = 0; $i < 12; $i++) {
@@ -180,10 +225,10 @@ class RtSeeder extends Seeder
             }
         }
 
-        // 10. Create 5 inactive occupants (riwayat)
-        for ($i = 1; $i <= 5; $i++) {
+        // 10. Create some additional inactive occupants (history) for permanent houses
+        for ($i = 1; $i <= 3; $i++) {
             $occupant = OccupantModel::create([
-                'occupant_name' => $faker->name . ' (Mantan)',
+                'occupant_name' => $faker->name . ' (Eks)',
                 'occupant_ktp_photo' => 'ktp_inactive_' . $i . '.jpg',
                 'occupant_status' => 'kontrak',
                 'occupant_phone_number' => $faker->phoneNumber,
@@ -191,10 +236,10 @@ class RtSeeder extends Seeder
             ]);
             
             HouseOccupantModel::create([
-                'house_id' => $houses[$i - 1]->house_id, // Assign to houses 1-5
+                'house_id' => $houses[$i - 1]->house_id,
                 'occupant_id' => $occupant->occupant_id,
                 'start_in_date' => $now->copy()->subYears(10)->toDateString(),
-                'end_in_date' => $now->copy()->subYears(5)->toDateString(),
+                'end_in_date' => $now->copy()->subYears(8)->toDateString(),
                 'is_current' => false,
                 'is_head_family' => false,
             ]);
