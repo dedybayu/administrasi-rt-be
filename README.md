@@ -172,6 +172,7 @@ Seluruh request API (kecuali login & refresh token) wajib menyertakan header:
 {
   "message": "Login successful",
   "access_token": "eyJhbGciOi...",
+  "refresh_token": "sasJnkcoNXBS...",
   "token_type": "bearer",
   "expires_in": 3600,
   "user": {
