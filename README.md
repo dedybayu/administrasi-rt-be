@@ -153,41 +153,231 @@ Seluruh request API (kecuali login & refresh token) wajib menyertakan header:
 `Authorization: Bearer <your_jwt_token>`
 
 ### 1. Autentikasi
-| Method | Endpoint | Deskripsi |
-| :--- | :--- | :--- |
-| `POST` | `/api/login` | Masuk ke sistem dan mendapatkan token JWT |
-| `POST` | `/api/refresh-token` | Memperbarui token JWT yang sudah expired |
-| `POST` | `/api/update-profile` | Memperbarui username atau password pengguna |
+
+<details>
+<summary><b>POST /api/login</b> - Masuk ke sistem</summary>
+
+**Request Body (JSON):**
+- `username` (string, required)
+- `password` (string, required)
+
+**Response (200 OK):**
+```json
+{
+  "message": "Login successful",
+  "access_token": "eyJhbGciOi...",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "user": {
+    "user_id": 1,
+    "username": "ketuart",
+    "role": "rt",
+    "occupant_id": null
+  }
+}
+```
+</details>
+
+<details>
+<summary><b>POST /api/update-profile</b> - Update Profil</summary>
+
+**Request Body (JSON):**
+- `username` (string, optional)
+- `password` (string, optional)
+
+**Response (200 OK):**
+```json
+{
+  "message": "Profile updated successfully",
+  "data": { ... }
+}
+```
+</details>
 
 ### 2. Dashboard & Laporan (Khusus RT)
-| Method | Endpoint | Deskripsi |
-| :--- | :--- | :--- |
-| `GET` | `/api/dashboard/report-cashflow` | Laporan arus kas tahunan (Bulanan) |
-| `GET` | `/api/dashboard/report-cashflow-detailed` | Rincian transaksi bulanan (Pemasukan & Pengeluaran) |
-| `GET` | `/api/dashboard/report-cashflow-daily` | Grafik transaksi harian dalam satu bulan |
+
+<details>
+<summary><b>GET /api/dashboard/report-cashflow</b> - Laporan arus kas tahunan</summary>
+
+**Response (200 OK):**
+```json
+{
+  "message": "Success retrieve cashflow report",
+  "total_balance": 5000000,
+  "years": [
+    {
+      "year": 2026,
+      "monthly_data": [
+        {
+          "month": 1,
+          "month_name": "January",
+          "income": 1000000,
+          "expense": 200000,
+          "balance": 800000,
+          "running_balance": 800000
+        }
+      ]
+    }
+  ]
+}
+```
+</details>
+
+<details>
+<summary><b>GET /api/dashboard/report-cashflow-detailed</b> - Rincian Transaksi Bulanan</summary>
+
+**Query Parameters:**
+- `year` (integer, required)
+- `month` (integer, required)
+
+**Response (200 OK):**
+```json
+{
+  "message": "Success retrieve detailed cashflow report",
+  "data": {
+    "incomes": [...],
+    "expenses": [...]
+  }
+}
+```
+</details>
 
 ### 3. Manajemen Data (Khusus RT)
-| Method | Endpoint | Deskripsi |
-| :--- | :--- | :--- |
-| `GET/POST` | `/api/occupants` | List & Tambah data Warga (dengan upload KTP) |
-| `GET/PUT/DELETE` | `/api/occupants/{id}` | Detail, Update, & Hapus data Warga |
-| `GET/POST` | `/api/houses` | List & Tambah data Rumah |
-| `GET/POST` | `/api/house-occupants` | Manajemen penghuni rumah (Tetap/Kontrak) |
-| `GET/POST` | `/api/payments` | List & Catat pembayaran iuran |
-| `GET/POST` | `/api/expenses` | List & Catat pengeluaran kas |
-| `GET` | `/api/dues-types` | List jenis iuran (Satpam, Kebersihan) |
+
+<details>
+<summary><b>POST /api/occupants</b> - Tambah data Warga</summary>
+
+**Request Body (Multipart/form-data):**
+- `occupant_name` (string, required)
+- `occupant_status` (string: 'tetap'|'kontrak', required)
+- `occupant_phone_number` (string, required)
+- `is_married` (boolean, required)
+- `occupant_ktp_photo` (file image)
+
+**Response (201 Created):**
+```json
+{
+  "message": "Occupant created successfully",
+  "data": { "occupant_id": 1, "occupant_name": "Budi", ... }
+}
+```
+</details>
+
+<details>
+<summary><b>POST /api/houses</b> - Tambah data Rumah</summary>
+
+**Request Body (JSON):**
+- `house_name` (string, required)
+- `house_number` (string, required)
+
+**Response (201 Created):**
+```json
+{
+  "message": "House created successfully",
+  "data": { "house_id": 1, "house_name": "Blok A", ... }
+}
+```
+</details>
+
+<details>
+<summary><b>POST /api/house-occupants</b> - Tambah penghuni rumah</summary>
+
+**Request Body (JSON):**
+- `house_id` (integer, required)
+- `occupant_id` (integer, required)
+- `start_in_date` (date, required)
+- `end_in_date` (date, optional/required jika tidak aktif)
+- `is_current` (boolean, required)
+- `is_head_family` (boolean, required)
+
+**Response (201 Created):**
+```json
+{
+  "message": "House occupant relation created successfully",
+  "data": { "house_occupant_id": 1, ... }
+}
+```
+</details>
+
+<details>
+<summary><b>POST /api/payments</b> - Catat pembayaran iuran</summary>
+
+**Request Body (Multipart/form-data):**
+- `dues_type_id` (integer, required)
+- `payer_occupant_id` (integer, required)
+- `house_occupant_id` (integer, required)
+- `payment_amount` (numeric, required)
+- `payment_date` (date, optional)
+- `payment_period_month` (integer 1-12, required)
+- `payment_period_year` (integer, required)
+- `payment_status` (string: pending,success,rejected, nullable)
+- `payment_proof` (file image, required jika status success)
+
+**Response (201 Created):**
+```json
+{
+  "message": "Payment created successfully",
+  "data": { "payment_id": 1, "payment_status": "success", ... }
+}
+```
+</details>
+
+<details>
+<summary><b>POST /api/expenses</b> - Catat pengeluaran kas</summary>
+
+**Request Body (JSON):**
+- `expense_amount` (numeric, required)
+- `expense_date` (date, required)
+- `expense_description` (string, required)
+
+**Response (201 Created):**
+```json
+{
+  "message": "Expense created successfully",
+  "data": { "expense_id": 1, "expense_amount": "50000", ... }
+}
+```
+</details>
+
 
 ### 4. Fitur Warga
-| Method | Endpoint | Deskripsi |
-| :--- | :--- | :--- |
-| `GET` | `/api/warga/dashboard` | Ringkasan tagihan & status iuran warga |
-| `GET` | `/api/warga/my-dues` | List tagihan iuran yang harus dibayar |
-| `POST` | `/api/warga/pay` | Konfirmasi pembayaran iuran (Upload bukti transfer) |
 
-### 5. Media (Files)
-| Method | Endpoint | Deskripsi |
-| :--- | :--- | :--- |
-| `GET` | `/api/ktp-photo/{filename}` | Mengambil file foto KTP |
-| `GET` | `/api/payment-proof/{filename}` | Mengambil file bukti pembayaran |
+<details>
+<summary><b>GET /api/warga/my-dues</b> - Tagihan Iuran Saya</summary>
+
+**Response (200 OK):**
+```json
+{
+  "message": "Success retrieve my dues",
+  "data": [
+    {
+      "payment_period_month": 5,
+      "payment_period_year": 2026,
+      "amount": "100000",
+      "status": "unpaid"
+    }
+  ]
+}
+```
+</details>
+
+<details>
+<summary><b>POST /api/warga/pay</b> - Konfirmasi Pembayaran Iuran</summary>
+
+**Request Body (Multipart/form-data):**
+- `dues_type_id` (integer, required)
+- `payment_period_month` (integer, required)
+- `payment_period_year` (integer, required)
+- `payment_amount` (numeric, required)
+- `payment_proof` (file image, required)
+
+**Response (200 OK):**
+```json
+{
+  "message": "Payment confirmation submitted successfully. Waiting for verification.",
+  "data": { "payment_id": 2, "payment_status": "pending", ... }
+}
+```
+</details>
 
 ---
