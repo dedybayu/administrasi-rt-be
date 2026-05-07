@@ -252,13 +252,24 @@ Seluruh request API (kecuali login & refresh token) wajib menyertakan header:
 - `occupant_status` (string: 'tetap'|'kontrak', required)
 - `occupant_phone_number` (string, required)
 - `is_married` (boolean, required)
-- `occupant_ktp_photo` (file image)
+- `occupant_gender` (string: 'L'|'P', optional)
+- `username` (string, required, unique)
+- `password` (string, required)
+- `occupant_ktp_photo` (file image, optional)
 
 **Response (201 Created):**
 ```json
 {
-  "message": "Occupant created successfully",
-  "data": { "occupant_id": 1, "occupant_name": "Budi", ... }
+  "message": "Occupant and User created successfully",
+  "data": { 
+    "occupant_id": 1, 
+    "occupant_name": "Budi",
+    "users": {
+        "user_id": 2,
+        "username": "budi123",
+        "occupant_id": 1
+    }
+  }
 }
 ```
 </details>
@@ -335,6 +346,22 @@ Seluruh request API (kecuali login & refresh token) wajib menyertakan header:
 {
   "message": "Expense created successfully",
   "data": { "expense_id": 1, "expense_amount": "50000", ... }
+}
+```
+</details>
+
+<details>
+<summary><b>POST /api/dues-types</b> - Tambah jenis iuran</summary>
+
+**Request Body (JSON):**
+- `dues_type_name` (string, required)
+- `dues_type_amount` (numeric, required)
+
+**Response (201 Created):**
+```json
+{
+  "message": "Dues type created successfully",
+  "data": { "dues_type_id": 1, "dues_type_name": "Kebersihan", "dues_type_amount": "50000" }
 }
 ```
 </details>
