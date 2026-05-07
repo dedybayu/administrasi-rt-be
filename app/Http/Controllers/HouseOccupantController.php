@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\HouseOccupantModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class HouseOccupantController extends Controller
 {
@@ -23,7 +24,17 @@ class HouseOccupantController extends Controller
             'house_id' => 'required|exists:m_houses,house_id',
             'occupant_id' => 'required|exists:m_occupants,occupant_id',
             'start_in_date' => 'required|date',
-            'end_in_date' => 'nullable|date|after_or_equal:start_in_date',
+            'end_in_date' => [
+                'nullable',
+                'required_if:is_current,0',
+                'date',
+                'after_or_equal:start_in_date',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->is_current && $value && $value < date('Y-m-d')) {
+                        $fail('Tanggal berakhir untuk penghuni aktif tidak boleh sebelum hari ini.');
+                    }
+                },
+            ],
             'is_current' => 'required|boolean',
             'is_head_family' => 'required|boolean',
         ]);
@@ -74,7 +85,22 @@ class HouseOccupantController extends Controller
             'house_id' => 'sometimes|required|exists:m_houses,house_id',
             'occupant_id' => 'sometimes|required|exists:m_occupants,occupant_id',
             'start_in_date' => 'sometimes|required|date',
-            'end_in_date' => 'sometimes|nullable|date|after_or_equal:start_in_date',
+            'end_in_date' => [
+                'sometimes',
+                'nullable',
+                Rule::requiredIf(function () use ($request, $houseOccupant) {
+                    $isCurrent = $request->has('is_current') ? $request->is_current : $houseOccupant->is_current;
+                    return !$isCurrent;
+                }),
+                'date',
+                'after_or_equal:start_in_date',
+                function ($attribute, $value, $fail) use ($request, $houseOccupant) {
+                    $isCurrent = $request->has('is_current') ? $request->is_current : $houseOccupant->is_current;
+                    if ($isCurrent && $value && $value < date('Y-m-d')) {
+                        $fail('Tanggal berakhir untuk penghuni aktif tidak boleh sebelum hari ini.');
+                    }
+                },
+            ],
             'is_current' => 'sometimes|required|boolean',
             'is_head_family' => 'sometimes|required|boolean',
         ]);
